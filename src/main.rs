@@ -2,6 +2,7 @@
 use rosu_v2::prelude::*;
 use anyhow::{Context, Result};
 use serde::{Serialize, Deserialize};
+
 #[derive(Debug, Serialize, Deserialize)]
 struct ConfigFile {
     name: String,
@@ -20,22 +21,20 @@ impl Default for ConfigFile {
     }
 }
 
-async fn init_api() -> Osu { // <- Return the Osu instance!
-    let cfg: ConfigFile = confy::load("osu-cli", "cli-config").context("Failed to load config!").unwrap(); // learn how to pass this "cfg" as an argument and not unwrap it
-
+async fn init_api(cfg: &ConfigFile) -> Result<Osu> { // <- Return the Osu instance!
     let client_id: u64 = cfg.api_client_id.into();
-    let client_secret = cfg.api_secret;
+    let client_secret = &cfg.api_secret;
     let osu_api = Osu::new(client_id, client_secret).await.unwrap();
-    osu_api // Return it!
+    Ok(osu_api) // Return it! (if Ok)
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> Result<(), anyhow::Error> {
     let cfg: ConfigFile = confy::load("osu-cli", "cli-config").context("Failed to load config!")?;
     println!("api id: {:?}", cfg.api_client_id);
 
     // init_api().await;
-    let api_osu = init_api().await;
+    let api_osu = init_api(&cfg).await?;
     let gamemode = if cfg.gamemode == "Osu" {
         GameMode::Osu
     } else if cfg.gamemode == "Mania" {
@@ -47,15 +46,35 @@ async fn main() -> Result<()> {
     } else {
         GameMode::Osu// or handle error, e.g. return Err(...)
     };
-
-    // let userall = api_osu.user("mayseikatsu").await.unwrap();
-    // println!("{:?}", userall);
-
     // let user_scores = api_osu.user_scores("mayseikatsu").mode(GameMode::Osu).await.unwrap();
 
-    let user = api_osu.user(cfg.name).mode(gamemode).await?;
-    // let user = api_osu.user("mayseikatsu").mode(GameMode::Osu).await?;
+    let user = api_osu.user(cfg.name).mode(gamemode).await?;     // basically this: let user = api_osu.user("mayseikatsu").mode(GameMode::Osu).await?;
+    
+    let statistics = match user.statistics {
+        Some(x) => x,
+        None => {
+            println!("Error while reading statistics!");
+            return Ok(());
+        }
+    };
+    let global_rank = match statistics.global_rank {
+        Some(x) => x,
+        none => {
+            println!("Error reading global rank!");
+            return Ok(());
+        }
+    };
+    let country_rank = match statistics.country_rank {
+        Some(x) => x,
+        none => {
+            println!("Error reading country rank!");
+            return Ok(());
+        }
+    };
+
     println!("Highest Rank {:#?}", user.highest_rank.unwrap().rank);
+    println!("Current Rank {:#?}", global_rank);
+    println!("Country Rank {:#?}", country_rank);
 
     // let scores = Scores::scores().await;
     // println!("username: {:?}", &scores.input_username);
