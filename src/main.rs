@@ -2,6 +2,7 @@
 use rosu_v2::prelude::*;
 use anyhow::{Context, Result};
 use serde::{Serialize, Deserialize};
+use cli_table::{format::Justify, print_stdout, Cell, Style, Table};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ConfigFile {
@@ -80,6 +81,8 @@ async fn main() -> Result<(), anyhow::Error> {
     // println!("username: {:?}", &scores.input_username);
     // println!("user_ext: {:?}", &scores.user_ext);
 
+    print_table();
+
     Ok(())
 }
 
@@ -100,3 +103,17 @@ impl Scores {
     }
 }
 
+fn print_table() {
+let table = vec![
+    vec!["mayseikatsu".cell(), "User".cell(), "peppy".cell().justify(Justify::Right)],
+    vec!["1203".cell(), "pp".cell(), "9001".cell().justify(Justify::Right)],
+    vec!["504930".cell(), "rank".cell(), "1".cell().justify(Justify::Right)],
+].table()
+.title(vec![
+    "User1".cell().bold(true),
+    "Info".cell().bold(true),
+    "User2".cell().bold(true),
+]).bold(true);
+
+assert!(print_stdout(table).is_ok());
+}
