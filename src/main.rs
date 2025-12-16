@@ -1,33 +1,13 @@
+mod api;
+mod config;
+
+use api::init_api;
+use config::ConfigFile;
+
 // use confy;
 use rosu_v2::prelude::*;
 use anyhow::{Context, Result};
-use serde::{Serialize, Deserialize};
 use cli_table::{format::Justify, print_stdout, Cell, Style, Table};
-
-#[derive(Debug, Serialize, Deserialize)]
-struct ConfigFile {
-    name: String,
-    gamemode: String, // maybe list?
-    api_client_id: u32,
-    api_secret: String,
-}
-impl Default for ConfigFile {
-    fn default () -> Self {
-        Self {
-            name: "mayseikatsu".to_string(),
-            gamemode: "Osu".to_string(),
-            api_client_id: 42909,
-            api_secret: "rBP4sRzwcGL9bYiqLb5fX1UXDuwtrY7LwWO8oJSh".to_string(),
-        }
-    }
-}
-
-async fn init_api(cfg: &ConfigFile) -> Result<Osu> { // <- Return the Osu instance!
-    let client_id: u64 = cfg.api_client_id.into();
-    let client_secret = &cfg.api_secret;
-    let osu_api = Osu::new(client_id, client_secret).await.unwrap();
-    Ok(osu_api) // Return it! (if Ok)
-}
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -36,6 +16,11 @@ async fn main() -> Result<(), anyhow::Error> {
 
     // init_api().await;
     let api_osu = init_api(&cfg).await?;
+
+enum Gamemode {
+    String,
+}
+// TODO: Implement gamemode as an enum instead of if-else queue
     let gamemode = if cfg.gamemode == "Osu" {
         GameMode::Osu
     } else if cfg.gamemode == "Mania" {
