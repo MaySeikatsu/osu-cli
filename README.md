@@ -25,27 +25,28 @@
 
 ### Data - User
 #### Prio:
-- [] gamemode selection
+- [x] gamemode selection
 - [] user profile picture
-- [] username
-- [] country (+image)
-- [] best rank (historical)
-- [] current rank
-- [] country rank
-- [] pp
-- [] ranked score
-- [] accuracy
-- [] maximum combo
+- [x] username
+- [x] country 
+  - [] (+image)
+- [x] best rank (historical)
+- [x] current rank
+- [x] country rank
+- [x] pp
+- [x] ranked score
+- [x] accuracy
+- [x] maximum combo
 #### Secondary:
-- [] level
-- [] playcount
-- [] total score
-- [] total hits
+- [x] level
+- [x] playcount
+- [x] total score
+- [x] total hits
 - [] hits per play
 - [] joined year
-- [] last seen
+- [x] last seen
 - [] medals
-- [] total playtime
+- [x] total playtime
 - [] playstyle (tablet, mouse, touchscreen etc.)
 - [] amounts achieved results for each ranking (SS, S, A)
 - [] recent plays
