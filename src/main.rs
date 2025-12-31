@@ -1,8 +1,10 @@
 mod api;
 mod config;
+mod models;
 
 use api::init_api;
 use config::{ConfigFile, GamemodeOptions};
+use models::{UserFetcher, UserData};
 
 // use confy;
 use rosu_v2::prelude::*;
@@ -13,201 +15,122 @@ use comfy_table::presets::UTF8_FULL_CONDENSED;
 use comfy_table::modifiers::UTF8_ROUND_CORNERS;
 // use comfy_table::*;
 
+/// Extension trait to add to_title_case method to strings
+trait StringExt {
+    fn to_title_case(&self) -> String;
+}
+
+impl StringExt for str {
+    fn to_title_case(&self) -> String {
+        let mut c = self.chars();
+        match c.next() {
+            None => String::new(),
+            Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     let cfg: ConfigFile = confy::load("osu-cli", "cli-config").context("Failed to load config!")?;
     println!("api id: {:?}", cfg.api_client_id);
 
-    // init_api().await;
-    let api_osu = init_api(&cfg).await?;
-
-// TODO: Implement gamemode as an enum instead of if-else queue
+    // Create user fetcher
+    let user_fetcher = UserFetcher::new(&cfg).await?;
     
-    let gamemode = match cfg.gamemode {
-        GamemodeOptions::Osu => GameMode::Osu,
-        GamemodeOptions::Mania => GameMode::Mania,
-        GamemodeOptions::Taiko=> GameMode::Taiko,
-        GamemodeOptions::Catch=> GameMode::Catch,
-    };
-
-    // let user_scores = api_osu.user_scores("mayseikatsu").mode(GameMode::Osu).await.unwrap();
-
-    let user = api_osu.user(cfg.name).mode(gamemode).await?;     // basically this: let user = api_osu.user("mayseikatsu").mode(GameMode::Osu).await?;
-    let statistics = match user.statistics {
-        Some(x) => x,
-        None => {
-            println!("Error while reading statistics!");
-            return Ok(());
-        }
-    };
-    let global_rank = match statistics.global_rank {
-        Some(x) => x,
-        None => {
-            println!("Error reading global rank!");
-            return Ok(());
-        }
-    };
-    let country_rank = match statistics.country_rank {
-        Some(x) => x,
-        None => {
-            println!("Error reading country rank!");
-            return Ok(());
-        }
-    };
-
-    println!("UserID {:#?}", user.user_id);
-    println!("Username {:#?}", user.username);
-    println!("Country {:#?}", user.country);
-    println!("Country Code {:#?}", user.country_code);
-    // println!("Highest Rank {:#?}", user.highest_rank.unwrap().rank);
-    println!("Current Rank {:#?}", global_rank);
-    println!("Country Rank {:#?}", country_rank);
-    println!("Active {:#?}", user.is_active);
-    println!("Online {:#?}", user.is_online);
-    println!("Osu Supporter {:#?}", user.is_supporter);
-    println!("Ranked Mapset Count {:#?}", user.ranked_mapset_count.unwrap());
-    println!("Last seen {:#?}", user.last_visit.unwrap());
-    println!("Has supported {:#?}", user.has_supported);
-    println!("PP {:#?}", statistics.pp);
-    println!("Accuracy {:#?}", statistics.accuracy);
-    println!("Level {:#?}", statistics.level.current);
-    println!("Max Combo {:#?}", statistics.max_combo);
-    println!("Total Playcount {:#?}", statistics.playcount);
-    println!("Total Playtime {:#?}", statistics.playtime);
-    println!("Ranked Score {:#?}", statistics.ranked_score);
-    println!("Total Hits {:#?}", statistics.total_hits);
-    println!("Total Score {:#?}", statistics.total_score);
-    println!("Rank since 1 month {:#?}", statistics.rank_change_since_30_days);
+    // Fetch data for all users
+    let users_data = user_fetcher.fetch_users(&cfg.names).await?;
+    
+    // Print some debug info
+    for user_data in &users_data {
+        println!("Fetched data for: {}", user_data.username);
+    }
 
     // let scores = Scores::scores().await;
     // println!("username: {:?}", &scores.input_username);
     // println!("user_ext: {:?}", &scores.user_ext);
 
     // print_table();
+    
+    // Create table with dynamic columns based on number of users
     let mut table = Table::new();
     table
         .set_content_arrangement(ContentArrangement::Dynamic)
         .load_preset(UTF8_FULL_CONDENSED)
-        .apply_modifier(UTF8_ROUND_CORNERS)
-        .set_header(vec![
-            "Data".to_string(),
-            user.username.to_string(),
-            "Second Username".to_string(),
-        ]);
+        .apply_modifier(UTF8_ROUND_CORNERS);
 
-    // Add rows for each field
+    // Create header with "Data" column followed by each username
+    let mut header = vec!["Data".to_string()];
+    for user_data in &users_data {
+        header.push(user_data.username.clone());
+    }
+    table.set_header(header);
 
-    table.add_row(vec![
-        "Username".to_string(), 
-        user.username.to_string(), 
-        // user[index].to_string()
-    ]);
-    table.add_row(vec![
-        "Country".to_string(),
-        user.country.to_string(),
-        "1000".to_string()
-    ]);
-    table.add_row(vec![
-        "Current Rank".to_string(),
-        global_rank.to_string(),
-        "1000".to_string()
-    ]);
-    table.add_row(vec![
-        "PP".to_string(),
-        statistics.pp.to_string(),
-    ]);
-    table.add_row(vec![
-        "Accuracy".to_string(),
-        statistics.accuracy.to_string(),
-    ]);
-    table.add_row(vec![
-        "",
-    ]);
-    table.add_row(vec![
-        "Level".to_string(),
-        statistics.level.current.to_string(),
-    ]);
-    table.add_row(vec![
-        "Max Combo".to_string(),
-        statistics.max_combo.to_string(),
-    ]);
-    table.add_row(vec![
-        "Total Playcount".to_string(),
-        statistics.playcount.to_string(),
-    ]);
-    table.add_row(vec![
-        "Total Playtime".to_string(),
-        statistics.playtime.to_string(),
-    ]);
-    table.add_row(vec![
-        "Join Date".to_string(),
-        user.join_date.date().to_string(),
-    ]);
-    table.add_row(vec![
-        "Last Seen".to_string(),
-        user.last_visit.unwrap().date().to_string(),
-    ]);
+    // Helper function to get a value from UserData or return empty string
+    fn get_user_value(user_data: &UserData, field: &str) -> String {
+        match field {
+            "username" => user_data.username.clone(),
+            "country" => user_data.country.clone().unwrap_or_default(),
+            "global_rank" => user_data.global_rank.map(|r| r.to_string()).unwrap_or_default(),
+            "country_rank" => user_data.country_rank.map(|r| r.to_string()).unwrap_or_default(),
+            "pp" => user_data.pp.to_string(),
+            "accuracy" => user_data.accuracy.to_string(),
+            "level" => user_data.level.to_string(),
+            "max_combo" => user_data.max_combo.to_string(),
+            "playcount" => user_data.playcount.to_string(),
+            "playtime" => user_data.playtime.to_string(),
+            "join_date" => user_data.join_date.date().to_string(),
+            "last_visit" => user_data.last_visit.map(|d| d.date().to_string()).unwrap_or_default(),
+            "user_id" => user_data.user_id.to_string(),
+            "country_code" => user_data.country_code.clone(),
+            "is_active" => user_data.is_active.to_string(),
+            "is_online" => user_data.is_online.to_string(),
+            "is_supporter" => user_data.is_supporter.to_string(),
+            "has_supported" => user_data.is_supporter.to_string(),
+            "total_hits" => user_data.total_hits.to_string(),
+            "ranked_score" => user_data.ranked_score.to_string(),
+            "total_score" => user_data.total_score.to_string(),
+            _ => "".to_string(),
+        }
+    }
 
-    table.add_row(vec![
-        "",
-    ]);
-    // TODO Set those optional with --all
-    table.add_row(vec![
-        "UserID".to_string(),
-        user.user_id.to_string(),
-        "1000".to_string()
-    ]);
-    table.add_row(vec![
-        "Highest Rank".to_string(),
-        user.highest_rank.unwrap().rank.to_string(),
-        "1000".to_string()
-    ]);
-    table.add_row(vec![
-        "Country Code".to_string(),
-        user.country_code.to_string(),
-        "1000".to_string()
-    ]);
-    table.add_row(vec![
-        "Country Rank".to_string(),
-        country_rank.to_string(),
-        "1000".to_string()
-    ]);
-    table.add_row(vec![
-        "",
-    ]);
-    table.add_row(vec![
-        "Is Active".to_string(),
-        user.is_active.to_string(),
-        "1000".to_string()
-    ]);
-    table.add_row(vec![
-        "Is Online".to_string(),
-        user.is_online.to_string(),
-        "1000".to_string()
-    ]);
-    table.add_row(vec![
-        "Osu Supporter".to_string(),
-        user.is_supporter.to_string(),
-    ]);
-    table.add_row(vec![
-        "Was Supporter".to_string(),
-        user.has_supported.to_string(),
-    ]);
-    table.add_row(vec![
-        "",
-    ]);
-    table.add_row(vec![
-        "Total Hits".to_string(),
-        statistics.total_hits.to_string(),
-    ]);
-    table.add_row(vec![
-        "Ranked Score".to_string(),
-        statistics.ranked_score.to_string(),
-    ]);
-    table.add_row(vec![
-        "Total Score".to_string(),
-        statistics.total_score.to_string(),
-    ]);
+    // Add rows for each data field
+    let fields = vec![
+        "username", "country", "global_rank", "pp", "accuracy", "", 
+        "level", "max_combo", "playcount", "playtime", "join_date", "last_visit",
+        "", "user_id", "country_code", "country_rank", "", "is_active", "is_online",
+        "is_supporter", "has_supported", "", "total_hits", "ranked_score", "total_score"
+    ];
+
+    for field in fields {
+        if field.is_empty() {
+            table.add_row(vec![""; users_data.len() + 1]);
+            continue;
+        }
+
+        let mut row = vec![match field {
+            "global_rank" => "Current Rank".to_string(),
+            "country_rank" => "Country Rank".to_string(),
+            "join_date" => "Join Date".to_string(),
+            "last_visit" => "Last Seen".to_string(),
+            "user_id" => "UserID".to_string(),
+            "country_code" => "Country Code".to_string(),
+            "is_active" => "Is Active".to_string(),
+            "is_online" => "Is Online".to_string(),
+            "is_supporter" => "Osu Supporter".to_string(),
+            "has_supported" => "Was Supporter".to_string(),
+            "total_hits" => "Total Hits".to_string(),
+            "ranked_score" => "Ranked Score".to_string(),
+            "total_score" => "Total Score".to_string(),
+            _ => field.replace('_', " ").to_title_case(),
+        }];
+
+        for user_data in &users_data {
+            row.push(get_user_value(user_data, field));
+        }
+
+        table.add_row(row);
+    }
 
     // table.add_row(vec!["Bob", "900", "2"]);
     // table.add_row(vec!["Charlie", "800", "3"]);
