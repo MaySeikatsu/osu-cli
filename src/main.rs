@@ -9,9 +9,9 @@ use rosu_v2::prelude::*;
 use anyhow::{Context, Result};
 // use cli_table::{format::Justify, print_stdout, Cell, Style, Table};
 use comfy_table::{Cell, Table, ContentArrangement};
-use comfy_table::presets::UTF8_FULL_CONDENSED;
+use comfy_table::presets::*;
 use comfy_table::modifiers::UTF8_ROUND_CORNERS;
-// use comfy_table::*;
+use comfy_table::*;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -55,29 +55,29 @@ async fn main() -> Result<(), anyhow::Error> {
         }
     };
 
-    println!("UserID {:#?}", user.user_id);
-    println!("Username {:#?}", user.username);
-    println!("Country {:#?}", user.country);
-    println!("Country Code {:#?}", user.country_code);
-    // println!("Highest Rank {:#?}", user.highest_rank.unwrap().rank);
-    println!("Current Rank {:#?}", global_rank);
-    println!("Country Rank {:#?}", country_rank);
-    println!("Active {:#?}", user.is_active);
-    println!("Online {:#?}", user.is_online);
-    println!("Osu Supporter {:#?}", user.is_supporter);
-    println!("Ranked Mapset Count {:#?}", user.ranked_mapset_count.unwrap());
-    println!("Last seen {:#?}", user.last_visit.unwrap());
-    println!("Has supported {:#?}", user.has_supported);
-    println!("PP {:#?}", statistics.pp);
-    println!("Accuracy {:#?}", statistics.accuracy);
-    println!("Level {:#?}", statistics.level.current);
-    println!("Max Combo {:#?}", statistics.max_combo);
-    println!("Total Playcount {:#?}", statistics.playcount);
-    println!("Total Playtime {:#?}", statistics.playtime);
-    println!("Ranked Score {:#?}", statistics.ranked_score);
-    println!("Total Hits {:#?}", statistics.total_hits);
-    println!("Total Score {:#?}", statistics.total_score);
-    println!("Rank since 1 month {:#?}", statistics.rank_change_since_30_days);
+    // println!("UserID {:#?}", user.user_id);
+    // println!("Username {:#?}", user.username);
+    // println!("Country {:#?}", user.country);
+    // println!("Country Code {:#?}", user.country_code);
+    // // println!("Highest Rank {:#?}", user.highest_rank.unwrap().rank);
+    // println!("Current Rank {:#?}", global_rank);
+    // println!("Country Rank {:#?}", country_rank);
+    // println!("Active {:#?}", user.is_active);
+    // println!("Online {:#?}", user.is_online);
+    // println!("Osu Supporter {:#?}", user.is_supporter);
+    // println!("Ranked Mapset Count {:#?}", user.ranked_mapset_count.unwrap());
+    // println!("Last seen {:#?}", user.last_visit.unwrap());
+    // println!("Has supported {:#?}", user.has_supported);
+    // println!("PP {:#?}", statistics.pp);
+    // println!("Accuracy {:#?}", statistics.accuracy);
+    // println!("Level {:#?}", statistics.level.current);
+    // println!("Max Combo {:#?}", statistics.max_combo);
+    // println!("Total Playcount {:#?}", statistics.playcount);
+    // println!("Total Playtime {:#?}", statistics.playtime);
+    // println!("Ranked Score {:#?}", statistics.ranked_score);
+    // println!("Total Hits {:#?}", statistics.total_hits);
+    // println!("Total Score {:#?}", statistics.total_score);
+    // println!("Rank since 1 month {:#?}", statistics.rank_change_since_30_days);
 
     // let scores = Scores::scores().await;
     // println!("username: {:?}", &scores.input_username);
@@ -87,34 +87,45 @@ async fn main() -> Result<(), anyhow::Error> {
     let mut table = Table::new();
     table
         .set_content_arrangement(ContentArrangement::Dynamic)
+        // .load_preset(UTF8_FULL)
         .load_preset(UTF8_FULL_CONDENSED)
         .apply_modifier(UTF8_ROUND_CORNERS)
         .set_header(vec![
-            "Data".to_string(),
-            user.username.to_string(),
-            "Second Username".to_string(),
+            Cell::new("Username").fg(Color::Blue),
+            Cell::new(user.username).fg(Color::Blue),
+            Cell::new("Second Username").fg(Color::Blue),
+            // "Username".to_string(),
+            // user.username.to_string(),
+            // "Second Username".to_string(),
         ]);
 
     // Add rows for each field
 
+    // table.add_row(vec![
+    //     "Username".to_string(), 
+    //     user.username.to_string(), 
+    //     // user[index].to_string()
+    // ]);
     table.add_row(vec![
-        "Username".to_string(), 
-        user.username.to_string(), 
-        // user[index].to_string()
-    ]);
-    table.add_row(vec![
-        "Country".to_string(),
-        user.country.to_string(),
-        "1000".to_string()
+        Cell::new("Country"),
+        Cell::new(user.country),
+        Cell::new("user2"),
+        // "Country".to_string(),
+        // user.country.to_string(),
+        // "1000".to_string()
     ]);
     table.add_row(vec![
         "Current Rank".to_string(),
         global_rank.to_string(),
         "1000".to_string()
     ]);
+    //TODO Maybe add bg color for the higher scores when comparing users (green best, red worst, blue mid)
     table.add_row(vec![
-        "PP".to_string(),
-        statistics.pp.to_string(),
+        Cell::new("PP").fg(Color::Rgb{r:255, g:000, b:200}),
+        Cell::new(statistics.pp).fg(Color::Rgb{r:255, g:000, b:200}),
+        // Cell::new("user2"),
+        // "PP".to_string(),
+        // statistics.pp.to_string(),
     ]);
     table.add_row(vec![
         "Accuracy".to_string(),
@@ -143,10 +154,15 @@ async fn main() -> Result<(), anyhow::Error> {
         "Join Date".to_string(),
         user.join_date.date().to_string(),
     ]);
-    table.add_row(vec![
-        "Last Seen".to_string(),
-        user.last_visit.unwrap().date().to_string(),
-    ]);
+
+    //TODO Fix error on last seen unwrap statement:
+    //thread 'main' (108089) panicked at src/main.rs:148:25:
+    // called `Option::unwrap()` on a `None` value
+    // note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+    // table.add_row(vec![
+    //     "Last Seen".to_string(),
+    //     user.last_visit.unwrap().date().to_string(),
+    // ]);
 
     table.add_row(vec![
         "",
