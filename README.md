@@ -70,3 +70,5 @@
 # Future
 - [] Create a TUI version
 - [] Themes
+- [] Compare Scores with Color Highlighting for best, worst and mid scores
+- [] Search for users in range of 20k/50l around the user and compare scores and maps to them --random
