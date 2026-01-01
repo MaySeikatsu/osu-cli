@@ -9,11 +9,38 @@ use comfy_table::*;
 
 pub async fn stats_out () -> Result<(), anyhow::Error> {
     let cfg: ConfigFile = confy::load("osu-cli", "cli-config").context("Failed to load config!")?;
-    let user_stats = UserStats::fetch_user_stats(&cfg, &cfg.names[0]).await?;
-    println!("UserID {:#?}", user_stats.user_id);
+    // let user_stats = UserStats::fetch_user_stats(&cfg, &cfg.names[1]).await?;
+    // let cookiezi_stats = UserStats::fetch_user_stats(&cfg, "cookiezi").await?;
+
+    for username in &cfg.names {
+        let user_stats = UserStats::fetch_user_stats(&cfg, username).await?;
+        println!("UserID {:#?}", user_stats.user_id);
+    }
+
+    let mut table = Table::new();
+     table
+        .set_content_arrangement(ContentArrangement::Dynamic)
+        // .load_preset(UTF8_FULL)
+        .load_preset(UTF8_FULL_CONDENSED)
+        .apply_modifier(UTF8_ROUND_CORNERS)
+        .set_header(vec!["Header1", "Header2", "Header3"]);
+        println!("{}", table);
+
 
     Ok(())
-
+    
+    //let mut table = Table::new();
+    // table
+    //     .set_content_arrangement(ContentArrangement::Dynamic)
+    //     // .load_preset(UTF8_FULL)
+    //     .load_preset(UTF8_FULL_CONDENSED)
+    //     .apply_modifier(UTF8_ROUND_CORNERS)
+    //     .set_header(
+            // table.add_row(vec![
+            //     Cell::new("Country"),
+            //     Cell::new(user.country),
+            // ]);
+    //     );
     //
     // table.add_row(vec![
     //     "",

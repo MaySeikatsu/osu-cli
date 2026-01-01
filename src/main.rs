@@ -20,9 +20,10 @@ async fn main() -> Result<(), anyhow::Error> {
 
 
     // name is iterator value, not an actual var, could be named anything
-    for name in &cfg.names {
-        println!("{}", name);
-    }
+    // for name in &cfg.names {
+    //     println!("{}", name);
+    // }
+    
     //Emmi loop to iterate over cells
     /*
         let mut users = Vec::new();

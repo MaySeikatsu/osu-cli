@@ -37,10 +37,11 @@ impl UserStats {
             GamemodeOptions::Taiko=> GameMode::Taiko,
             GamemodeOptions::Catch=> GameMode::Catch,
         };
-        
+ 
+        // let user = api_osu.user(&cfg.names[0]).mode(gamemode).await?;
         let user = api_osu.user(username).mode(gamemode).await?;
         let statistics = user.statistics.context("Error reading user statistics!")?;
-        
+ 
         Ok(Self {
             username: user.username.to_string(),
             user_id: user.user_id,
